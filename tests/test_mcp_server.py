@@ -15,7 +15,7 @@ async def test_mcp_surface_exposes_resource_tool_and_prompt(tmp_path):
     resources = await mcp.list_resources()
     prompts = await mcp.list_prompts()
 
-    assert [tool.name for tool in tools] == ["pulse_should_interrupt"]
+    assert [tool.name for tool in tools] == ["pulse_should_interrupt", "pulse_ack_replan"]
     assert [str(resource.uri) for resource in resources] == ["pulse://context/latest"]
     assert [prompt.name for prompt in prompts] == ["pulse_replan"]
 
@@ -23,6 +23,14 @@ async def test_mcp_surface_exposes_resource_tool_and_prompt(tmp_path):
     decision = json.loads(tool_result[0].text)
     assert decision["needs_replan"] is False
     assert "latest_event_id" in decision
+    assert "pending_replan_event_id" in decision
+    assert "last_acknowledged_event_id" in decision
+
+    ack_result = await mcp.call_tool("pulse_ack_replan", {"event_id": "evt_missing"})
+    ack = json.loads(ack_result[0].text)
+    assert ack["accepted"] is False
+    assert "acknowledged_event_id" in ack
+    assert "plan_sha256" in ack
 
     resource_result = await mcp.read_resource("pulse://context/latest")
     assert "# PulseAgent Context" in resource_result[0].content

@@ -10,6 +10,7 @@ from .models import PulseState
 
 PULSE_DIR = ".pulse"
 WATCHED_FILES = ("task.md", "guidance.md", "constraints.md", "plan.md")
+STATE_SCHEMA_VERSION = 2
 
 TEMPLATES: dict[str, str] = {
     "task.md": "# Task\n\nDescribe the current task here.\n",
@@ -121,7 +122,11 @@ def load_state(project: str | Path | None = None) -> PulseState:
         state = PulseState(project_root=str(paths.project_root))
         write_json(paths.state, state.model_dump(mode="json"))
         return state
-    return PulseState.model_validate(raw)
+    state = PulseState.model_validate(raw)
+    if state.schema_version != STATE_SCHEMA_VERSION:
+        state.schema_version = STATE_SCHEMA_VERSION
+        write_json(paths.state, state.model_dump(mode="json"))
+    return state
 
 
 def save_state(project: str | Path | None, state: PulseState) -> None:

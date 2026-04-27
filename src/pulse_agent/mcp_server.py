@@ -5,7 +5,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from .context import compile_context
-from .policy import should_interrupt
+from .policy import ack_replan, should_interrupt
 from .protocol import ensure_pulse_dir
 
 
@@ -35,6 +35,11 @@ def create_mcp(
         """Check whether an IDE agent should pause and replan."""
         return should_interrupt(project_root, last_seen_event_id).model_dump(mode="json")
 
+    @mcp.tool()
+    def pulse_ack_replan(event_id: str) -> dict:
+        """Acknowledge that an agent replanned for the latest guidance or constraints event."""
+        return ack_replan(project_root, event_id).model_dump(mode="json")
+
     @mcp.prompt()
     def pulse_replan() -> str:
         """Prompt an agent to replan using the latest PulseAgent context."""
@@ -42,7 +47,7 @@ def create_mcp(
             "Before continuing, read pulse://context/latest and call "
             "pulse_should_interrupt with your last seen event id. If needs_replan is true, "
             "pause implementation, summarize the changed guidance or constraints, "
-            "update your plan, "
+            "update your plan, call pulse_ack_replan with pending_replan_event_id, "
             "then continue only under the latest PulseAgent context."
         )
 

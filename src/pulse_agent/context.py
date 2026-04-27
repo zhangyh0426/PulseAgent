@@ -12,6 +12,7 @@ def compile_context(project: str | Path | None = None, recent_events: int = 20) 
     scan_for_changes(project)
     decision = should_interrupt(project)
     events = read_events(project, limit=recent_events)
+    pending_files = ", ".join(decision.pending_replan_files) or "none"
 
     event_lines = []
     for event in events:
@@ -27,6 +28,9 @@ def compile_context(project: str | Path | None = None, recent_events: int = 20) 
             "## Status",
             f"- needs_replan: {str(decision.needs_replan).lower()}",
             f"- latest_event_id: {decision.latest_event_id or 'none'}",
+            f"- pending_replan_event_id: {decision.pending_replan_event_id or 'none'}",
+            f"- pending_replan_files: {pending_files}",
+            f"- last_acknowledged_event_id: {decision.last_acknowledged_event_id or 'none'}",
             f"- reason: {decision.reason}",
             "",
             "## Security Boundary",
