@@ -2,16 +2,19 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-PulseAgent 是一个面向长时间运行编码 Agent 的、可感知中断的 MCP sidecar。
-它帮助 IDE Agent 在执行过程中发现用户指导、项目约束或当前计划已经发生变化。
+长时间运行的编码 Agent 很容易漂移：用户已经改变任务方向或约束，但 Agent 仍在执行昨天的计划。
+
+PulseAgent 给编码 Agent 提供一个接收“指令变化”的收件箱。当 `.pulse/guidance.md` 或
+`.pulse/constraints.md` 发生变化时，Agent 可以暂停、刷新上下文、修改 `.pulse/plan.md`、
+确认这次 replan，然后在最新指令下继续。
 
 PulseAgent 不替代 Cursor、Codex、Claude Code、Copilot 或其他 IDE Agent。
-它提供一个轻量的项目本地协议和 Streamable HTTP MCP 服务，让现有 Agent 可以暂停、
-刷新上下文、重新规划、确认新计划，然后在最新指令下继续工作。
+从技术上说，它是一个可感知中断的 MCP sidecar：一个轻量的项目本地协议，加上
+Streamable HTTP MCP 服务，让现有 Agent 可以在继续长任务前检查是否需要重新规划。
 
 ## 为什么需要 PulseAgent
 
-长时间编码任务容易发生漂移：用户可能改变想法、补充约束，或者在 Agent 还按旧计划执行时更新计划。
+长时间编码任务容易发生漂移，因为用户意图变化时，Agent 可能还在执行旧的心智模型。
 PulseAgent 为这个过程提供一个共享事实源：
 
 - 用户只需要编辑 `.pulse/` 下的少量文件；
@@ -99,6 +102,15 @@ PulseAgent 监听四个项目本地文件：
 `guidance.md` 和 `constraints.md` 的变化会让计划失效。单独更新 `plan.md` 不会清除中断。
 Agent 必须使用返回的 `pending_replan_event_id` 调用 `pulse_ack_replan`；PulseAgent 随后会记录
 已确认的事件 ID 和当前 `plan.md` 的 SHA-256 哈希。
+
+### `.pulse/events.jsonl` 是什么？
+
+`.pulse/events.jsonl` 是被监听 `.pulse/` 文件的 append-only 事件账本。每一行记录一次文件变化，
+包括事件 ID、路径、SHA-256 哈希、文件大小、时间戳和变化类型。它主要用于调试，也让 MCP 工具知道
+Agent 上次检查之后发生了什么变化。
+
+不要把 `events.jsonl` 当成用户指令，也不要手动编辑它。Agent 应该读取 `pulse://context/latest`，
+并调用 `pulse_should_interrupt`，而不是直接解析这个日志。
 
 ## MCP 接口
 

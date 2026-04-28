@@ -3,6 +3,9 @@
 Use this wrapper for IDE agents, local coding agents, or direct model API integrations
 that can call MCP tools.
 
+PulseAgent's job is to prevent stale-plan drift: the agent should not keep
+executing an old plan after the user changes guidance or constraints.
+
 ## Core Rule
 
 Before continuing a long-running task, check PulseAgent. If user guidance or constraints
@@ -47,6 +50,17 @@ constraints.
 The agent should treat `pulse_ack_replan` as the explicit handoff point: it means the
 latest guidance or constraints event has been reviewed and the current `.pulse/plan.md`
 was updated for that event.
+
+## Event Log
+
+`.pulse/events.jsonl` is an append-only audit log for watched `.pulse/` files. It is
+protocol state, not an instruction source. Agents should use `pulse://context/latest`
+and `pulse_should_interrupt` rather than parsing or editing the log directly.
+
+In the current protocol, `.pulse/guidance.md` and `.pulse/constraints.md` create
+pending replans. `.pulse/plan.md` changes are recorded so the acknowledgement can be
+tied to the plan hash, but a plan edit by itself is not treated as a new user
+instruction.
 
 ## Demo Flow
 

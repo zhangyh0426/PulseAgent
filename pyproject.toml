@@ -5,14 +5,14 @@ build-backend = "hatchling.build"
 [project]
 name = "pulse-agent"
 version = "0.1.0"
-description = "Interrupt-aware MCP sidecar for coding agents."
+description = "Instruction-change inbox for long-running coding agents."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
   { name = "PulseAgent contributors" }
 ]
-keywords = ["mcp", "coding-agent", "sidecar", "planning", "interrupts"]
+keywords = ["mcp", "coding-agent", "sidecar", "planning", "interrupts", "human-in-the-loop"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",

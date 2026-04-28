@@ -2,20 +2,24 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-PulseAgent is an interrupt-aware MCP sidecar for long-running coding agents.
-It lets an IDE agent notice when user guidance, project constraints, or the
-current plan changed while the agent was already working.
+Long-running coding agents drift when they keep executing yesterday's plan after
+the user has changed the task direction or constraints.
+
+PulseAgent gives a coding agent an inbox for changed instructions. When
+`.pulse/guidance.md` or `.pulse/constraints.md` changes, the agent can pause,
+refresh context, revise `.pulse/plan.md`, acknowledge the replan, and continue
+under the latest instructions.
 
 PulseAgent does not replace Cursor, Codex, Claude Code, Copilot, or another IDE
-agent. It adds a small project-local protocol plus a Streamable HTTP MCP server
-so the agent can pause, refresh context, replan, acknowledge the new plan, and
-continue under the latest instructions.
+agent. Technically, it is an interrupt-aware MCP sidecar: a small project-local
+protocol plus a Streamable HTTP MCP server that existing agents can check before
+continuing long-running work.
 
 ## Why PulseAgent
 
-Long coding tasks often drift because the user changes their mind, adds a
-constraint, or updates the plan while the agent is still executing an older
-mental model. PulseAgent gives that workflow a shared source of truth:
+Long coding tasks often drift because user intent changes while the agent is
+still executing an older mental model. PulseAgent gives that workflow a shared
+source of truth:
 
 - users edit a few files under `.pulse/`;
 - PulseAgent records changes as events;
@@ -104,6 +108,17 @@ Changes to `guidance.md` and `constraints.md` are plan-invalidating. Updating
 `plan.md` alone does not clear the interrupt. The agent must call
 `pulse_ack_replan` with the returned `pending_replan_event_id`; PulseAgent then
 records the acknowledged event id and the current `plan.md` SHA-256 hash.
+
+### What is `.pulse/events.jsonl`?
+
+`.pulse/events.jsonl` is the append-only event ledger for watched `.pulse/`
+files. Each line records a file change with an event id, path, SHA-256 hash, size,
+timestamp, and change kind. It is useful for debugging and for MCP tools to know
+what changed since the agent last checked.
+
+Do not treat `events.jsonl` as user instructions and do not edit it by hand. The
+agent should read `pulse://context/latest` and call `pulse_should_interrupt`
+instead of parsing the log directly.
 
 ## MCP Surface
 
